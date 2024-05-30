@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import NavBar from '@/app/ui/navbar';
 import { inter } from '@/app/ui/fonts';
 import './globals.css';
 
@@ -17,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} text-gray-800`}>{children}</body>
+      <body className={`${inter.className} text-gray-800`}>
+        <NavBar />
+        {children}
+      </body>
     </html>
   );
 }
