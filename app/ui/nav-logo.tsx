@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { kanit } from '@/app/ui/fonts';
+import { kanit } from '@/app/fonts';
 export default function NavLogo() {
   return (
     <Link href="/">

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { kanit } from '@/app/ui/fonts';
+import { kanit } from '@/app/fonts';
 export default function Home() {
   return (
     <main
