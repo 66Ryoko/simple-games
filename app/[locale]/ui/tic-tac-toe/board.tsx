@@ -1,12 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { TicTacToePlayers, SquareValue } from '@/app/lib/definitions';
-import Square from '@/app/ui/tic-tac-toe/square';
-import { kanit } from '@/app/fonts';
+import Square from '@/app/[locale]/ui/tic-tac-toe/square';
+import { kanit } from '@/app/[locale]/fonts';
 import clsx from 'clsx';
+import { useTranslations } from 'next-intl';
+import { LOCALE_NAME_SPACE } from '@/i18n.config';
 
 const BOARD_WIDTH = 3;
 export default function Board() {
+  const t = useTranslations(LOCALE_NAME_SPACE.ticTacToe);
   const [squares, setSquares] = useState<SquareValue[]>(
     Array(Math.pow(BOARD_WIDTH, 2)).fill(null),
   );
@@ -77,14 +80,17 @@ export default function Board() {
         )}
       >
         {!isGameOver
-          ? `${getCurrentPlayer(filledSquareCount)} Turn`
+          ? t('player.turn', {
+              player: getCurrentPlayer(filledSquareCount),
+            })
           : winner !== null
-            ? `${winner} Win!`
-            : `${TicTacToePlayers.O} ${TicTacToePlayers.X} Draw!`}
+            ? t('player.win', { player: winner })
+            : t('player.draw', {
+                player1: TicTacToePlayers.O,
+                player2: TicTacToePlayers.X,
+              })}
       </p>
-      <div
-        className={`grid h-60 w-60 grid-cols-${BOARD_WIDTH} grid-rows-${BOARD_WIDTH}`}
-      >
+      <div className={'grid h-60 w-60 grid-cols-3 grid-rows-3'}>
         {squares.map((square, index) => (
           <Square
             key={`square-${index}`}
@@ -98,7 +104,7 @@ export default function Board() {
           onClick={resetGame}
           className={`flex w-full items-center justify-center border border-gray-100 bg-gray-50 p-2 hover:bg-gray-100`}
         >
-          Replay
+          {t('replay')}
         </button>
       }
     </div>

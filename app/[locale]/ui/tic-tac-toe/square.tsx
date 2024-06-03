@@ -1,5 +1,5 @@
 import { SquareValue } from '@/app/lib/definitions';
-import { kanit } from '@/app/fonts';
+import { kanit } from '@/app/[locale]/fonts';
 export default function Square({
   squareValue,
   onSquareClick,
