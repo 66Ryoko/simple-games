@@ -16,13 +16,10 @@ export default function NavLinks() {
             key={link.name}
             href={link.href}
             className={clsx(
-              'hidden rounded-full p-2 text-sm font-semibold md:block ',
-              {
-                'bg-sky-50 text-sky-500 hover:bg-sky-100':
-                  pathname === link.href,
-                'bg-white text-gray-500 hover:bg-gray-100':
-                  pathname !== link.href,
-              },
+              'rounded-full p-2 text-sm font-semibold',
+              pathname === link.href
+                ? 'bg-sky-50 text-sky-500 hover:bg-sky-100'
+                : 'bg-white text-gray-500 hover:bg-gray-100',
             )}
           >
             <p>{link.name}</p>
