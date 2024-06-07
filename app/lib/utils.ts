@@ -1,11 +1,11 @@
 import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
-function getSquare(
+
+function getSquareIndex(
   row: number,
   column: number,
   boardWidth: number,
-  squares: SquareValue[],
-): SquareValue {
-  return squares[column * boardWidth + row];
+): number {
+  return column * boardWidth + row;
 }
 export function checkIsSameRowOrColumn(
   row: number,
@@ -13,17 +13,17 @@ export function checkIsSameRowOrColumn(
   boardWidth: number,
   squares: SquareValue[],
 ): SquareValue {
-  let square: SquareValue = getSquare(row, column, boardWidth, squares);
+  let square: SquareValue = squares[getSquareIndex(row, column, boardWidth)];
   let sameRow: boolean = true,
     sameColumn: boolean = true;
   let i: number = 0;
 
   while ((sameRow || sameColumn) && i < boardWidth) {
-    if (sameRow) {
-      sameRow = getSquare(row, i, boardWidth, squares) === square;
+    if (sameRow && i !== column) {
+      sameRow = squares[getSquareIndex(row, i, boardWidth)] === square;
     }
-    if (sameColumn) {
-      sameColumn = getSquare(i, column, boardWidth, squares) === square;
+    if (sameColumn && i !== row) {
+      sameColumn = squares[getSquareIndex(i, column, boardWidth)] === square;
     }
     i++;
   }
@@ -42,17 +42,17 @@ export function checkIsSameDiagonal(
   if (row !== column && row != boardWidth - column - 1) {
     return null;
   }
-  let square: SquareValue = getSquare(row, column, boardWidth, squares);
+  let square: SquareValue = squares[getSquareIndex(row, column, boardWidth)];
   let sameDiagonal: boolean = true,
     sameAntiDiagonal: boolean = true;
   let i: number = 0;
   while ((sameDiagonal || sameAntiDiagonal) && i < boardWidth) {
-    if (sameDiagonal) {
-      sameDiagonal = getSquare(i, i, boardWidth, squares) === square;
+    if (sameDiagonal && !(i === row && i === column)) {
+      sameDiagonal = squares[getSquareIndex(i, i, boardWidth)] === square;
     }
-    if (sameAntiDiagonal) {
+    if (sameAntiDiagonal && !(boardWidth - i - 1 === row && i === column)) {
       sameAntiDiagonal =
-        getSquare(boardWidth - i - 1, i, boardWidth, squares) === square;
+        squares[getSquareIndex(boardWidth - i - 1, i, boardWidth)] === square;
     }
     i++;
   }
@@ -95,6 +95,7 @@ export function alphaBetaPruning(
   depth: number,
   alpha: number,
   beta: number,
+  scoreMap: Map<string, number>,
 ): number {
   const { gameOver, winner } = calculateWinner(
     squares,
@@ -109,34 +110,50 @@ export function alphaBetaPruning(
   } else if (gameOver || depth === TIC_TAC_TOE_CONFIG.maxDepth) {
     return 0;
   }
-  let bestScore: number = isMaximizingPlayer ? -Infinity : Infinity;
-  for (let i = 0; i < squares.length; i++) {
-    if (squares[i] === null) {
-      squares[i] = isMaximizingPlayer
-        ? TIC_TAC_TOE_CONFIG.playerAi
-        : TIC_TAC_TOE_CONFIG.playerUser;
-      let score: number = alphaBetaPruning(
-        squares,
-        boardSize,
-        !isMaximizingPlayer,
-        i,
-        totalMoves + 1,
-        alpha,
-        beta,
-        depth + 1,
-      );
-      squares[i] = null;
-      if (isMaximizingPlayer) {
-        bestScore = Math.max(bestScore, score);
-        alpha = Math.max(alpha, score);
-      } else {
-        bestScore = Math.min(bestScore, score);
-        beta = Math.min(beta, score);
-      }
-      if (beta <= alpha) {
-        break;
-      }
-    }
+  const key: string = getScoreMapKey(squares);
+  let scoreInMap: number | undefined = scoreMap.get(key);
+  if (scoreInMap && scoreInMap !== Infinity && scoreInMap !== -Infinity) {
+    return scoreInMap;
   }
+  let bestScore: number = isMaximizingPlayer ? -Infinity : Infinity;
+  let possibleMoves: number[] = getPossibleMoves(squares);
+  possibleMoves.every((i) => {
+    squares[i] = isMaximizingPlayer
+      ? TIC_TAC_TOE_CONFIG.playerAi
+      : TIC_TAC_TOE_CONFIG.playerUser;
+    let score: number = alphaBetaPruning(
+      squares,
+      boardSize,
+      !isMaximizingPlayer,
+      i,
+      totalMoves + 1,
+      alpha,
+      beta,
+      depth + 1,
+      scoreMap,
+    );
+    squares[i] = null;
+    if (isMaximizingPlayer) {
+      bestScore = Math.max(bestScore, score);
+      alpha = Math.max(alpha, score);
+    } else {
+      bestScore = Math.min(bestScore, score);
+      beta = Math.min(beta, score);
+    }
+    return beta > alpha;
+  });
+  scoreMap.set(key, bestScore);
   return bestScore;
+}
+function getScoreMapKey(squares: SquareValue[]): string {
+  return squares.join();
+}
+export function getPossibleMoves(squares: SquareValue[]): number[] {
+  let possibleMoves: number[] = [];
+  squares.forEach((square, index) => {
+    if (square === null) {
+      possibleMoves.push(index);
+    }
+  });
+  return possibleMoves;
 }
