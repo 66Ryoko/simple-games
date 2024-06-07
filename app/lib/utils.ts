@@ -1,4 +1,4 @@
-import { SquareValue } from '@/app/lib/definitions';
+import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
 function getSquare(
   row: number,
   column: number,
@@ -61,4 +61,82 @@ export function checkIsSameDiagonal(
   } else {
     return null;
   }
+}
+export function calculateWinner(
+  squares: SquareValue[],
+  boardSize: number,
+  currentMoveIndex: number,
+  totalMoves: number,
+): { gameOver: boolean; winner: SquareValue } {
+  if (totalMoves < boardSize) {
+    return { gameOver: false, winner: null };
+  }
+  const row: number = currentMoveIndex % boardSize;
+  const column: number = (currentMoveIndex - row) / boardSize;
+
+  let winner: SquareValue = null;
+  winner = checkIsSameRowOrColumn(row, column, boardSize, squares);
+  if (winner !== null) {
+    return { gameOver: true, winner: winner };
+  } else {
+    winner = checkIsSameDiagonal(row, column, boardSize, squares);
+    let gameOver: boolean =
+      totalMoves === Math.pow(boardSize, 2) || winner !== null;
+    return { gameOver: gameOver, winner: winner };
+  }
+}
+
+export function alphaBetaPruning(
+  squares: SquareValue[],
+  boardSize: number,
+  isMaximizingPlayer: boolean,
+  currentMoveIndex: number,
+  totalMoves: number,
+  depth: number,
+  alpha: number,
+  beta: number,
+): number {
+  const { gameOver, winner } = calculateWinner(
+    squares,
+    boardSize,
+    currentMoveIndex,
+    totalMoves,
+  );
+  if (winner === TIC_TAC_TOE_CONFIG.playerAi) {
+    return TIC_TAC_TOE_CONFIG.maxDepth - depth;
+  } else if (winner === TIC_TAC_TOE_CONFIG.playerUser) {
+    return depth - TIC_TAC_TOE_CONFIG.maxDepth;
+  } else if (gameOver || depth === TIC_TAC_TOE_CONFIG.maxDepth) {
+    return 0;
+  }
+  let bestScore: number = isMaximizingPlayer ? -Infinity : Infinity;
+  for (let i = 0; i < squares.length; i++) {
+    if (squares[i] === null) {
+      squares[i] = isMaximizingPlayer
+        ? TIC_TAC_TOE_CONFIG.playerAi
+        : TIC_TAC_TOE_CONFIG.playerUser;
+      let score: number = alphaBetaPruning(
+        squares,
+        boardSize,
+        !isMaximizingPlayer,
+        i,
+        totalMoves + 1,
+        alpha,
+        beta,
+        depth + 1,
+      );
+      squares[i] = null;
+      if (isMaximizingPlayer) {
+        bestScore = Math.max(bestScore, score);
+        alpha = Math.max(alpha, score);
+      } else {
+        bestScore = Math.min(bestScore, score);
+        beta = Math.min(beta, score);
+      }
+      if (beta <= alpha) {
+        break;
+      }
+    }
+  }
+  return bestScore;
 }

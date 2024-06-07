@@ -5,85 +5,115 @@ import { useTranslations } from 'next-intl';
 import { LOCALE_NAME_SPACE } from '@/i18n.config';
 import BaseButton from '@/app/[locale]/ui/baseButton';
 import { kanit } from '@/app/[locale]/fonts';
-import {
-  TIC_TAC_TOE_LEVEL,
-  BOARD_SIZES,
-  TicTacToePlayers,
-  SquareValue,
-} from '@/app/lib/definitions';
-import { checkIsSameRowOrColumn, checkIsSameDiagonal } from '@/app/lib/utils';
+import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
+import { calculateWinner } from '@/app/lib/utils';
 
 export default function Board() {
   const t = useTranslations(LOCALE_NAME_SPACE.ticTacToe);
 
   const [showSettingMenu, setShowSettingMenu] = useState<boolean>(true);
-  const [boardSize, setBoardSize] = useState<number>(BOARD_SIZES.simple);
+  const [boardSize, setBoardSize] = useState<number>(
+    TIC_TAC_TOE_CONFIG.boardSize.simple,
+  );
   const [squares, setSquares] = useState<SquareValue[]>(
     Array(Math.pow(boardSize, 2)).fill(null),
   );
-  const [currentSquareIndex, setCurrentSquareIndex] = useState<number>(-1);
-  const [filledSquareCount, setFilledSquareCount] = useState<number>(0);
+  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(-1);
+  const [totalMoves, setTotalMoves] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [winner, setWinner] = useState<SquareValue>(null);
 
+  const move = useCallback(
+    (index: number) => {
+      let newSquares: SquareValue[] = [...squares];
+      newSquares[index] = getCurrentPlayer(totalMoves);
+      setSquares(newSquares);
+      setCurrentMoveIndex(index);
+      setTotalMoves(totalMoves + 1);
+    },
+    [squares, totalMoves],
+  );
+
   useEffect(() => {
-    function calculateWinner(): SquareValue {
-      if (filledSquareCount < boardSize) {
-        return null;
-      }
-      const row: number = currentSquareIndex % boardSize;
-      const column: number = (currentSquareIndex - row) / boardSize;
+    let aiPlayerWorker: Worker;
+    function aiMove() {
+      aiPlayerWorker = new Worker(
+        new URL('@/app/workers/ticTacToeAIWorker', import.meta.url),
+      );
+      aiPlayerWorker.onmessage = (event) => {
+        if (!isNaN(event.data)) {
+          move(event.data);
+        }
+      };
 
-      let winner: SquareValue = null;
-      winner = checkIsSameRowOrColumn(row, column, boardSize, squares);
-      if (winner !== null) {
-        return winner;
-      }
-
-      winner = checkIsSameDiagonal(row, column, boardSize, squares);
-      return winner;
+      aiPlayerWorker.onerror = (event) => {
+        if (event instanceof Event) {
+          return event;
+        }
+        throw event;
+      };
+      aiPlayerWorker.postMessage({
+        squares,
+        boardSize,
+        totalMoves,
+        playerAi: TIC_TAC_TOE_CONFIG.playerAi,
+        playerUser: TIC_TAC_TOE_CONFIG.playerUser,
+      });
     }
-    let winner: SquareValue = calculateWinner();
-    setWinner(winner);
-    setIsGameOver(
-      filledSquareCount === Math.pow(boardSize, 2) || winner !== null,
+    const { gameOver, winner } = calculateWinner(
+      squares,
+      boardSize,
+      currentMoveIndex,
+      totalMoves,
     );
-  }, [squares, currentSquareIndex, filledSquareCount, boardSize]);
+    setWinner(winner);
+    if (!gameOver) {
+      if (getCurrentPlayer(totalMoves) === TIC_TAC_TOE_CONFIG.playerAi) {
+        aiMove();
+      }
+    }
+    setIsGameOver(gameOver);
+    return () => {
+      if (aiPlayerWorker) {
+        aiPlayerWorker.terminate();
+      }
+    };
+  }, [squares, currentMoveIndex, totalMoves, boardSize, move]);
 
   const gameStatus = useCallback(() => {
     return !isGameOver
       ? t('player.turn', {
-          player: getCurrentPlayer(filledSquareCount),
+          player: getCurrentPlayer(totalMoves),
         })
       : winner !== null
         ? t('player.win', { player: winner })
         : t('player.draw', {
-            player1: TicTacToePlayers.O,
-            player2: TicTacToePlayers.X,
+            player1: TIC_TAC_TOE_CONFIG.playerUser,
+            player2: TIC_TAC_TOE_CONFIG.playerAi,
           });
-  }, [filledSquareCount, isGameOver, t, winner]);
+  }, [totalMoves, isGameOver, t, winner]);
 
   function getCurrentPlayer(stepCount: number): SquareValue {
-    return stepCount % 2 === 0 ? TicTacToePlayers.O : TicTacToePlayers.X;
+    return stepCount % 2 === 0
+      ? TIC_TAC_TOE_CONFIG.playerUser
+      : TIC_TAC_TOE_CONFIG.playerAi;
   }
 
   function handleSquareClick(index: number) {
-    if (isGameOver || squares[index] !== null) {
+    if (
+      isGameOver ||
+      getCurrentPlayer(totalMoves) === TIC_TAC_TOE_CONFIG.playerAi ||
+      squares[index] !== null
+    ) {
       return;
     }
-    setSquares((oldSquares) => {
-      let newSquares: SquareValue[] = [...oldSquares];
-      newSquares[index] = getCurrentPlayer(filledSquareCount);
-      return newSquares;
-    });
-    setCurrentSquareIndex(index);
-    setFilledSquareCount(filledSquareCount + 1);
+    move(index);
   }
 
   function resetGame(size: number = boardSize) {
     setSquares(Array(Math.pow(size, 2)).fill(null));
-    setCurrentSquareIndex(-1);
-    setFilledSquareCount(0);
+    setCurrentMoveIndex(-1);
+    setTotalMoves(0);
     setIsGameOver(false);
     setWinner(null);
   }
@@ -101,8 +131,9 @@ export default function Board() {
   }
 
   function BoardLevelButton(level: string) {
-    const isSelected: boolean = boardSize === BOARD_SIZES[level];
-    const size: number = BOARD_SIZES[level];
+    const isSelected: boolean =
+      boardSize === TIC_TAC_TOE_CONFIG.boardSize[level];
+    const size: number = TIC_TAC_TOE_CONFIG.boardSize[level];
     return (
       <BaseButton
         bold={isSelected}
@@ -123,7 +154,7 @@ export default function Board() {
     <div className="flex w-44 flex-col place-items-center md:w-72">
       <p className="text-lg">{t('level.select')}</p>
       <div className="m-4 flex w-full flex-col gap-2 md:flex-row">
-        {Object.values(TIC_TAC_TOE_LEVEL).map((level) =>
+        {Object.values(TIC_TAC_TOE_CONFIG.level).map((level) =>
           BoardLevelButton(level),
         )}
       </div>
@@ -143,9 +174,12 @@ export default function Board() {
       </p>
       <div
         className={clsx('grid aspect-square w-full', {
-          'grid-cols-3 grid-rows-3': boardSize === BOARD_SIZES.simple,
-          'grid-cols-4 grid-rows-4': boardSize === BOARD_SIZES.mid,
-          'grid-cols-5 grid-rows-5': boardSize === BOARD_SIZES.hard,
+          'grid-cols-3 grid-rows-3':
+            boardSize === TIC_TAC_TOE_CONFIG.boardSize.simple,
+          'grid-cols-4 grid-rows-4':
+            boardSize === TIC_TAC_TOE_CONFIG.boardSize.mid,
+          'grid-cols-5 grid-rows-5':
+            boardSize === TIC_TAC_TOE_CONFIG.boardSize.hard,
         })}
       >
         {squares.map((square, index) => (
