@@ -97,6 +97,11 @@ export function alphaBetaPruning(
   beta: number,
   scoreMap: Map<string, number>,
 ): number {
+  const key: string = getScoreMapKey(squares);
+  let scoreInMap: number | undefined = scoreMap.get(key);
+  if (scoreInMap && scoreInMap !== Infinity && scoreInMap !== -Infinity) {
+    return scoreInMap;
+  }
   const { gameOver, winner } = calculateWinner(
     squares,
     boardSize,
@@ -109,11 +114,6 @@ export function alphaBetaPruning(
     return depth - TIC_TAC_TOE_CONFIG.maxDepth;
   } else if (gameOver || depth === TIC_TAC_TOE_CONFIG.maxDepth) {
     return 0;
-  }
-  const key: string = getScoreMapKey(squares);
-  let scoreInMap: number | undefined = scoreMap.get(key);
-  if (scoreInMap && scoreInMap !== Infinity && scoreInMap !== -Infinity) {
-    return scoreInMap;
   }
   let bestScore: number = isMaximizingPlayer ? -Infinity : Infinity;
   let possibleMoves: number[] = getPossibleMoves(squares);

@@ -1,4 +1,4 @@
-export enum TicTacToePlayers {
+enum TicTacToePlayers {
   'O' = 'O',
   'X' = 'X',
 }
@@ -14,4 +14,14 @@ export const TIC_TAC_TOE_CONFIG = {
     [TIC_TAC_TOE_LEVEL.mid]: 4,
     [TIC_TAC_TOE_LEVEL.hard]: 5,
   },
+};
+export type TicTacToeAIWorkerMsg = {
+  squares: SquareValue[];
+  boardSize: number;
+  totalMoves: number;
+  subPossibleMoves: number[];
+};
+export type TicTacToeAIWorkerResponse = {
+  bestMoveIndex: number;
+  bestScore: number;
 };

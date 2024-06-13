@@ -6,8 +6,9 @@ import { LOCALE_NAME_SPACE } from '@/i18n.config';
 import BaseButton from '@/app/[locale]/ui/baseButton';
 import { kanit } from '@/app/[locale]/fonts';
 import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
-import { calculateWinner } from '@/app/lib/utils';
-
+import { TicTacToeAIWorkerController } from '@/app/workers/tic-tac-toe/workerController';
+import { calculateWinner, getPossibleMoves } from '@/app/lib/utils';
+const MAX_WORKERS_NUM = 4;
 export default function Board() {
   const t = useTranslations(LOCALE_NAME_SPACE.ticTacToe);
 
@@ -22,6 +23,7 @@ export default function Board() {
   const [totalMoves, setTotalMoves] = useState<number>(0);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [winner, setWinner] = useState<SquareValue>(null);
+  const [workers, setWorkers] = useState<TicTacToeAIWorkerController[]>([]);
 
   const move = useCallback(
     (index: number) => {
@@ -33,51 +35,61 @@ export default function Board() {
     },
     [squares, totalMoves],
   );
-
   useEffect(() => {
-    let aiPlayerWorker: Worker;
     function aiMove() {
-      aiPlayerWorker = new Worker(
-        new URL('@/app/workers/ticTacToeAIWorker', import.meta.url),
+      const possibleMoves: number[] = getPossibleMoves(squares);
+      const numOfWorkers: number = Math.min(
+        possibleMoves.length,
+        MAX_WORKERS_NUM,
       );
-      aiPlayerWorker.onmessage = (event) => {
-        if (!isNaN(event.data)) {
-          move(event.data);
-        }
-      };
-
-      aiPlayerWorker.onerror = (event) => {
-        if (event instanceof Event) {
-          return event;
-        }
-        throw event;
-      };
-      aiPlayerWorker.postMessage({
-        squares,
-        boardSize,
-        totalMoves,
-        playerAi: TIC_TAC_TOE_CONFIG.playerAi,
-        playerUser: TIC_TAC_TOE_CONFIG.playerUser,
-      });
+      const squaresPerWorker = Math.ceil(possibleMoves.length / numOfWorkers);
+      let workerControllers: TicTacToeAIWorkerController[] = [];
+      for (let i = 0; i < numOfWorkers; i++) {
+        const start = i * squaresPerWorker;
+        const end = Math.min(start + squaresPerWorker, possibleMoves.length);
+        workerControllers.push(
+          new TicTacToeAIWorkerController({
+            action: {
+              squares,
+              boardSize,
+              totalMoves,
+              subPossibleMoves: possibleMoves.slice(start, end),
+            },
+          }),
+        );
+      }
+      setWorkers(workerControllers);
+      Promise.all(workerControllers.map((worker) => worker.postMessage())).then(
+        (results) => {
+          let bestMove = results.reduce((best, current) =>
+            current.bestScore > best.bestScore ? current : best,
+          );
+          if (bestMove.bestMoveIndex === -1) {
+            bestMove.bestMoveIndex =
+              possibleMoves[
+                Math.floor(Math.random() * (possibleMoves.length - 1))
+              ];
+          }
+          move(bestMove.bestMoveIndex);
+          setWorkers([]);
+        },
+      );
     }
+
     const { gameOver, winner } = calculateWinner(
       squares,
       boardSize,
       currentMoveIndex,
       totalMoves,
     );
-    setWinner(winner);
     if (!gameOver) {
       if (getCurrentPlayer(totalMoves) === TIC_TAC_TOE_CONFIG.playerAi) {
         aiMove();
       }
+    } else {
+      setWinner(winner);
     }
     setIsGameOver(gameOver);
-    return () => {
-      if (aiPlayerWorker) {
-        aiPlayerWorker.terminate();
-      }
-    };
   }, [squares, currentMoveIndex, totalMoves, boardSize, move]);
 
   const gameStatus = useCallback(() => {
@@ -116,6 +128,10 @@ export default function Board() {
     setTotalMoves(0);
     setIsGameOver(false);
     setWinner(null);
+    if (workers && workers.length > 0) {
+      workers.forEach((worker) => worker.terminate());
+      setWorkers([]);
+    }
   }
 
   function changeBoardSize(size: number) {
