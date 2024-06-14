@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { LOCALE_NAME_SPACE } from '@/i18n.config';
-import BaseButton from '@/app/[locale]/ui/baseButton';
+import BaseButton from '@/app/[locale]/ui/base-button';
 import { kanit } from '@/app/[locale]/fonts';
 import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
 import { TicTacToeAIWorkerController } from '@/app/workers/tic-tac-toe/workerController';
