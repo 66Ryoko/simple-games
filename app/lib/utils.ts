@@ -68,7 +68,7 @@ export function calculateWinner(
   currentMoveIndex: number,
   totalMoves: number,
 ): { gameOver: boolean; winner: SquareValue } {
-  if (totalMoves < boardSize * 2) {
+  if (totalMoves < boardSize * 2 - 1) {
     return { gameOver: false, winner: null };
   }
   const row: number = currentMoveIndex % boardSize;
