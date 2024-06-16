@@ -24,6 +24,14 @@ Features:
 
 Future work: Continuous improvement of computing efficiency.
 
+## State Management
+
+Using [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) for efficient and predictable state management.
+
+## CSS Framework
+
+Utilizing [Tailwind CSS](https://tailwindcss.com/) for building React components with utility-first classes, promoting rapid development and consistent styling.
+
 ## Internationalization
 
 This project uses i18n libraries including [next-intl](https://next-intl-docs.vercel.app/) and [i18nexus](https://i18nexus.com/). (Please refer to [next-intl document](https://next-intl-docs.vercel.app/docs/getting-started/app-router/with-i18n-routing) or [i18nexus tutorial](https://i18nexus.com/tutorials/nextjs/next-intl) for more information.)
@@ -33,3 +41,7 @@ You can register an i18nexus account and project for free and import the entire 
 ```bash
 npm run pull-string
 ```
+
+## Code Quality
+
+Use [ESLint](https://eslint.org/) and [Prettier](https://prettier.io/) to ensure code quality and maintain consistent coding style throughout the project.

@@ -1,18 +1,14 @@
 import { alphaBetaPruning } from '@/app/lib/utils';
-import {
-  TIC_TAC_TOE_CONFIG,
-  TicTacToeAIWorkerMsg,
-  TicTacToeAIWorkerResponse,
-} from '@/app/lib/definitions';
+import { TicTacToe } from '@/app/lib/definitions';
 
-self.onmessage = (event: MessageEvent<TicTacToeAIWorkerMsg>) => {
+self.onmessage = (event: MessageEvent<TicTacToe.AIWorkerMsg>) => {
   const { squares, boardSize, totalMoves, subPossibleMoves } = event.data;
   let tmpSquares = [...squares];
   let bestScore: number = -Infinity;
   let bestMoveIndex: number = -1;
   const scoreMap = new Map<string, number>();
   subPossibleMoves.forEach((i) => {
-    tmpSquares[i] = TIC_TAC_TOE_CONFIG.playerAi;
+    tmpSquares[i] = TicTacToe.CONFIG.playerAi;
     let score: number = alphaBetaPruning(
       tmpSquares,
       boardSize,
@@ -30,7 +26,7 @@ self.onmessage = (event: MessageEvent<TicTacToeAIWorkerMsg>) => {
       bestMoveIndex = i;
     }
   });
-  let response: TicTacToeAIWorkerResponse = {
+  let response: TicTacToe.AIWorkerResponse = {
     bestMoveIndex,
     bestScore,
   };

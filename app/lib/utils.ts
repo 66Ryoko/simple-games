@@ -1,5 +1,8 @@
-import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
+import { TicTacToe } from '@/app/lib/definitions';
 
+export function genSquares(boardSize: number) {
+  return Array(Math.pow(boardSize, 2)).fill(null);
+}
 function getSquareIndex(
   row: number,
   column: number,
@@ -11,9 +14,10 @@ export function checkIsSameRowOrColumn(
   row: number,
   column: number,
   boardWidth: number,
-  squares: SquareValue[],
-): SquareValue {
-  let square: SquareValue = squares[getSquareIndex(row, column, boardWidth)];
+  squares: TicTacToe.SquareValue[],
+): TicTacToe.SquareValue {
+  let square: TicTacToe.SquareValue =
+    squares[getSquareIndex(row, column, boardWidth)];
   let sameRow: boolean = true,
     sameColumn: boolean = true;
   let i: number = 0;
@@ -37,12 +41,13 @@ export function checkIsSameDiagonal(
   row: number,
   column: number,
   boardWidth: number,
-  squares: SquareValue[],
-): SquareValue {
+  squares: TicTacToe.SquareValue[],
+): TicTacToe.SquareValue {
   if (row !== column && row != boardWidth - column - 1) {
     return null;
   }
-  let square: SquareValue = squares[getSquareIndex(row, column, boardWidth)];
+  let square: TicTacToe.SquareValue =
+    squares[getSquareIndex(row, column, boardWidth)];
   let sameDiagonal: boolean = true,
     sameAntiDiagonal: boolean = true;
   let i: number = 0;
@@ -63,18 +68,18 @@ export function checkIsSameDiagonal(
   }
 }
 export function calculateWinner(
-  squares: SquareValue[],
+  squares: TicTacToe.SquareValue[],
   boardSize: number,
   currentMoveIndex: number,
   totalMoves: number,
-): { gameOver: boolean; winner: SquareValue } {
+): { gameOver: boolean; winner: TicTacToe.SquareValue } {
   if (totalMoves < boardSize * 2 - 1) {
     return { gameOver: false, winner: null };
   }
   const row: number = currentMoveIndex % boardSize;
   const column: number = (currentMoveIndex - row) / boardSize;
 
-  let winner: SquareValue = null;
+  let winner: TicTacToe.SquareValue = null;
   winner = checkIsSameRowOrColumn(row, column, boardSize, squares);
   if (winner !== null) {
     return { gameOver: true, winner: winner };
@@ -87,7 +92,7 @@ export function calculateWinner(
 }
 
 export function alphaBetaPruning(
-  squares: SquareValue[],
+  squares: TicTacToe.SquareValue[],
   boardSize: number,
   isMaximizingPlayer: boolean,
   currentMoveIndex: number,
@@ -108,19 +113,19 @@ export function alphaBetaPruning(
     currentMoveIndex,
     totalMoves,
   );
-  if (winner === TIC_TAC_TOE_CONFIG.playerAi) {
-    return TIC_TAC_TOE_CONFIG.maxDepth - depth;
-  } else if (winner === TIC_TAC_TOE_CONFIG.playerUser) {
-    return depth - TIC_TAC_TOE_CONFIG.maxDepth;
-  } else if (gameOver || depth === TIC_TAC_TOE_CONFIG.maxDepth) {
+  if (winner === TicTacToe.CONFIG.playerAi) {
+    return TicTacToe.CONFIG.maxDepth - depth;
+  } else if (winner === TicTacToe.CONFIG.playerUser) {
+    return depth - TicTacToe.CONFIG.maxDepth;
+  } else if (gameOver || depth === TicTacToe.CONFIG.maxDepth) {
     return 0;
   }
   let bestScore: number = isMaximizingPlayer ? -Infinity : Infinity;
   let possibleMoves: number[] = getPossibleMoves(squares);
   possibleMoves.every((i) => {
     squares[i] = isMaximizingPlayer
-      ? TIC_TAC_TOE_CONFIG.playerAi
-      : TIC_TAC_TOE_CONFIG.playerUser;
+      ? TicTacToe.CONFIG.playerAi
+      : TicTacToe.CONFIG.playerUser;
     let score: number = alphaBetaPruning(
       squares,
       boardSize,
@@ -145,10 +150,10 @@ export function alphaBetaPruning(
   scoreMap.set(key, bestScore);
   return bestScore;
 }
-function getScoreMapKey(squares: SquareValue[]): string {
+function getScoreMapKey(squares: TicTacToe.SquareValue[]): string {
   return squares.join();
 }
-export function getPossibleMoves(squares: SquareValue[]): number[] {
+export function getPossibleMoves(squares: TicTacToe.SquareValue[]): number[] {
   let possibleMoves: number[] = [];
   squares.forEach((square, index) => {
     if (square === null) {

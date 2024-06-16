@@ -4,37 +4,37 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { LOCALE_NAME_SPACE } from '@/i18n.config';
 import BaseButton from '@/app/[locale]/ui/base-button';
+import ScoreBoard from '@/app/[locale]/ui/tic-tac-toe/score-board';
 import { kanit } from '@/app/[locale]/fonts';
-import { SquareValue, TIC_TAC_TOE_CONFIG } from '@/app/lib/definitions';
-import { TicTacToeAIWorkerController } from '@/app/workers/tic-tac-toe/workerController';
+import { TicTacToe } from '@/app/lib/definitions';
+import { TicTacToeAIWorkerController } from '@/app/workers/tic-tac-toe/worker-controller';
 import { calculateWinner, getPossibleMoves } from '@/app/lib/utils';
+import { useAppDispatch, useAppSelector } from '@/app/lib/state/hook';
+import {
+  setBoardSize,
+  move,
+  updateGameResult,
+  resetGameStates,
+} from '@/app/lib/state/reducers/tic-tac-toe-reducer';
+
 const MAX_WORKERS_NUM = 4;
 export default function Board() {
   const t = useTranslations(LOCALE_NAME_SPACE.ticTacToe);
+  const {
+    isGameOver,
+    winner,
+    boardSize,
+    squares,
+    currentMoveIndex,
+    totalMoves,
+    currentPlayer,
+  } = useAppSelector((state) => state.ticTacToe);
+  const dispatch = useAppDispatch();
 
   const [showSettingMenu, setShowSettingMenu] = useState<boolean>(true);
-  const [boardSize, setBoardSize] = useState<number>(
-    TIC_TAC_TOE_CONFIG.boardSize.simple,
-  );
-  const [squares, setSquares] = useState<SquareValue[]>(
-    Array(Math.pow(boardSize, 2)).fill(null),
-  );
-  const [currentMoveIndex, setCurrentMoveIndex] = useState<number>(-1);
-  const [totalMoves, setTotalMoves] = useState<number>(0);
-  const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const [winner, setWinner] = useState<SquareValue>(null);
   const [workers, setWorkers] = useState<TicTacToeAIWorkerController[]>([]);
+  const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
-  const move = useCallback(
-    (index: number) => {
-      let newSquares: SquareValue[] = [...squares];
-      newSquares[index] = getCurrentPlayer(totalMoves);
-      setSquares(newSquares);
-      setCurrentMoveIndex(index);
-      setTotalMoves(totalMoves + 1);
-    },
-    [squares, totalMoves],
-  );
   useEffect(() => {
     function aiMove() {
       const possibleMoves: number[] = getPossibleMoves(squares);
@@ -70,64 +70,65 @@ export default function Board() {
                 Math.floor(Math.random() * (possibleMoves.length - 1))
               ];
           }
-          move(bestMove.bestMoveIndex);
+          dispatch(move({ index: bestMove.bestMoveIndex }));
           setWorkers([]);
         },
       );
     }
 
-    const { gameOver, winner } = calculateWinner(
-      squares,
-      boardSize,
-      currentMoveIndex,
-      totalMoves,
-    );
-    if (!gameOver) {
-      if (getCurrentPlayer(totalMoves) === TIC_TAC_TOE_CONFIG.playerAi) {
-        aiMove();
+    if (!isCalculating) {
+      setIsCalculating(true);
+      const { gameOver, winner } = calculateWinner(
+        squares,
+        boardSize,
+        currentMoveIndex,
+        totalMoves,
+      );
+      if (!gameOver) {
+        if (currentPlayer === TicTacToe.CONFIG.playerAi) {
+          aiMove();
+        }
+      } else {
+        dispatch(updateGameResult({ isGameOver: gameOver, winner }));
       }
-    } else {
-      setWinner(winner);
+      setIsCalculating(false);
     }
-    setIsGameOver(gameOver);
-  }, [squares, currentMoveIndex, totalMoves, boardSize, move]);
+  }, [
+    squares,
+    currentPlayer,
+    currentMoveIndex,
+    totalMoves,
+    boardSize,
+    isCalculating,
+    dispatch,
+  ]);
 
   const gameStatus = useCallback(() => {
     return !isGameOver
       ? t('player.turn', {
-          player: getCurrentPlayer(totalMoves),
+          player: currentPlayer,
         })
       : winner !== null
         ? t('player.win', { player: winner })
         : t('player.draw', {
-            player1: TIC_TAC_TOE_CONFIG.playerUser,
-            player2: TIC_TAC_TOE_CONFIG.playerAi,
+            player1: TicTacToe.CONFIG.playerUser,
+            player2: TicTacToe.CONFIG.playerAi,
           });
-  }, [totalMoves, isGameOver, t, winner]);
-
-  function getCurrentPlayer(stepCount: number): SquareValue {
-    return stepCount % 2 === 0
-      ? TIC_TAC_TOE_CONFIG.playerUser
-      : TIC_TAC_TOE_CONFIG.playerAi;
-  }
+  }, [currentPlayer, isGameOver, t, winner]);
 
   function handleSquareClick(index: number) {
     if (
       isGameOver ||
-      getCurrentPlayer(totalMoves) === TIC_TAC_TOE_CONFIG.playerAi ||
+      currentPlayer === TicTacToe.CONFIG.playerAi ||
       squares[index] !== null
     ) {
       return;
     }
-    move(index);
+    dispatch(move({ index }));
   }
 
-  function resetGame(size: number = boardSize) {
-    setSquares(Array(Math.pow(size, 2)).fill(null));
-    setCurrentMoveIndex(-1);
-    setTotalMoves(0);
-    setIsGameOver(false);
-    setWinner(null);
+  function resetGame() {
+    dispatch(resetGameStates());
     if (workers && workers.length > 0) {
       workers.forEach((worker) => worker.terminate());
       setWorkers([]);
@@ -135,8 +136,7 @@ export default function Board() {
   }
 
   function changeBoardSize(size: number) {
-    setBoardSize(size);
-    resetGame(size);
+    dispatch(setBoardSize(size));
   }
 
   function toggleSettingMenu(show: boolean) {
@@ -147,9 +147,8 @@ export default function Board() {
   }
 
   function BoardLevelButton(level: string) {
-    const isSelected: boolean =
-      boardSize === TIC_TAC_TOE_CONFIG.boardSize[level];
-    const size: number = TIC_TAC_TOE_CONFIG.boardSize[level];
+    const isSelected: boolean = boardSize === TicTacToe.CONFIG.boardSize[level];
+    const size: number = TicTacToe.CONFIG.boardSize[level];
     return (
       <BaseButton
         bold={isSelected}
@@ -170,7 +169,7 @@ export default function Board() {
     <div className="flex w-44 flex-col place-items-center md:w-72">
       <p className="text-lg">{t('level.select')}</p>
       <div className="m-4 flex w-full flex-col gap-2 md:flex-row">
-        {Object.values(TIC_TAC_TOE_CONFIG.level).map((level) =>
+        {Object.values(TicTacToe.CONFIG.level).map((level) =>
           BoardLevelButton(level),
         )}
       </div>
@@ -188,18 +187,20 @@ export default function Board() {
       >
         {gameStatus()}
       </p>
+      <ScoreBoard />
       <div
         className={clsx('grid aspect-square w-full', {
           'grid-cols-3 grid-rows-3':
-            boardSize === TIC_TAC_TOE_CONFIG.boardSize.simple,
+            boardSize === TicTacToe.CONFIG.boardSize.simple,
           'grid-cols-4 grid-rows-4':
-            boardSize === TIC_TAC_TOE_CONFIG.boardSize.mid,
+            boardSize === TicTacToe.CONFIG.boardSize.mid,
           'grid-cols-5 grid-rows-5':
-            boardSize === TIC_TAC_TOE_CONFIG.boardSize.hard,
+            boardSize === TicTacToe.CONFIG.boardSize.hard,
         })}
       >
         {squares.map((square, index) => (
           <BaseButton
+            highlight={index === currentMoveIndex}
             key={`square-${index}`}
             className="text-3xl"
             onClick={() => handleSquareClick(index)}
@@ -208,7 +209,13 @@ export default function Board() {
           </BaseButton>
         ))}
       </div>
-      <BaseButton onClick={() => resetGame()}>{t('replay')}</BaseButton>
+      <BaseButton
+        highlight={isGameOver}
+        bounce={isGameOver}
+        onClick={() => resetGame()}
+      >
+        {t('replay')}
+      </BaseButton>
       <BaseButton onClick={() => toggleSettingMenu(true)}>
         {t('level.reselect-level')}
       </BaseButton>

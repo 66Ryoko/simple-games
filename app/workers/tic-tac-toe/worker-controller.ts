@@ -1,18 +1,15 @@
-import {
-  TicTacToeAIWorkerMsg,
-  TicTacToeAIWorkerResponse,
-} from '@/app/lib/definitions';
+import { TicTacToe } from '@/app/lib/definitions';
 export class TicTacToeAIWorkerController {
   worker: Worker;
-  action: TicTacToeAIWorkerMsg;
-  constructor({ action }: { action: TicTacToeAIWorkerMsg }) {
+  action: TicTacToe.AIWorkerMsg;
+  constructor({ action }: { action: TicTacToe.AIWorkerMsg }) {
     this.worker = new Worker(
       new URL('@/app/workers/tic-tac-toe/worker', import.meta.url),
     );
     this.action = action;
   }
-  postMessage(): Promise<TicTacToeAIWorkerResponse> {
-    return new Promise<TicTacToeAIWorkerResponse>((resolve, reject) => {
+  postMessage(): Promise<TicTacToe.AIWorkerResponse> {
+    return new Promise<TicTacToe.AIWorkerResponse>((resolve, reject) => {
       this.worker.onmessage = (event) => {
         resolve(event.data);
         this.terminate();

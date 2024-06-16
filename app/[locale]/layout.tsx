@@ -1,5 +1,6 @@
 import NavBar from '@/app/[locale]/ui/navbar';
 import { inter } from '@/app/[locale]/fonts';
+import { StoreProvider } from '@/app/[locale]/ui/store-provider';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import { LOCALE_NAME_SPACE } from '@/i18n.config';
@@ -35,10 +36,12 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <NextIntlClientProvider messages={messages}>
-        <body className={`${inter.className} text-gray-800`}>
-          <NavBar />
-          {children}
-        </body>
+        <StoreProvider>
+          <body className={`${inter.className} text-gray-800`}>
+            <NavBar />
+            {children}
+          </body>
+        </StoreProvider>
       </NextIntlClientProvider>
     </html>
   );
