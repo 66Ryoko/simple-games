@@ -36,8 +36,8 @@ export default function Board() {
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
   useEffect(() => {
+    const possibleMoves: number[] = getPossibleMoves(squares);
     function aiMove() {
-      const possibleMoves: number[] = getPossibleMoves(squares);
       const numOfWorkers: number = Math.min(
         possibleMoves.length,
         MAX_WORKERS_NUM,
@@ -59,21 +59,28 @@ export default function Board() {
         );
       }
       setWorkers(workerControllers);
-      Promise.all(workerControllers.map((worker) => worker.postMessage())).then(
-        (results) => {
+      Promise.all(workerControllers.map((worker) => worker.postMessage()))
+        .then((results) => {
           let bestMove = results.reduce((best, current) =>
             current.bestScore > best.bestScore ? current : best,
           );
           if (bestMove.bestMoveIndex === -1) {
-            bestMove.bestMoveIndex =
-              possibleMoves[
-                Math.floor(Math.random() * (possibleMoves.length - 1))
-              ];
+            bestMove.bestMoveIndex = randomMove();
           }
           dispatch(move({ index: bestMove.bestMoveIndex }));
+        })
+        .catch((err) => {
+          console.error(err);
+          dispatch(move({ index: randomMove() }));
+        })
+        .finally(() => {
           setWorkers([]);
-        },
-      );
+        });
+    }
+    function randomMove() {
+      return possibleMoves[
+        Math.floor(Math.random() * (possibleMoves.length - 1))
+      ];
     }
 
     if (!isCalculating) {

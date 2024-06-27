@@ -14,6 +14,7 @@ export const CONFIG = {
     [LEVEL.mid]: 4,
     [LEVEL.hard]: 5,
   },
+  aiTimeout: 3000,
 };
 export interface AIWorkerMsg {
   squares: SquareValue[];

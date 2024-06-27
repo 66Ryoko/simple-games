@@ -19,6 +19,10 @@ export class TicTacToeAIWorkerController {
         this.terminate();
       };
       this.worker.postMessage(this.action);
+      setTimeout(() => {
+        reject('tic-tac-toe ai worker timeout');
+        this.terminate();
+      }, TicTacToe.CONFIG.aiTimeout);
     });
   }
   terminate(): void {
