@@ -9,6 +9,18 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      colors: {
+        primary: {
+          light: colors.gray[50],
+          regular: colors.gray[100],
+          text: colors.gray[800],
+        },
+        secondary: {
+          light: colors.sky[50],
+          regular: colors.sky[100],
+          text: colors.sky[500],
+        },
+      },
       animation: {
         'bg-breathing': 'bg-breathing 3s ease-in-out infinite',
       },

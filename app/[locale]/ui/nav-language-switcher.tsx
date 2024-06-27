@@ -44,7 +44,7 @@ export default function NavLanguageSwitcher() {
 
         <p
           className={clsx(
-            'break-all text-sm text-gray-500',
+            'text-primary-text break-all text-sm',
             hideTextOnMobile ? 'hidden md:block' : '',
           )}
         >
@@ -57,7 +57,7 @@ export default function NavLanguageSwitcher() {
     return (
       <button
         onClick={() => handleToggleMenu(true)}
-        className="overflow-hidden rounded-full bg-white hover:bg-gray-50"
+        className="hover:bg-primary-light overflow-hidden rounded-full bg-white"
       >
         {LanguageItem(currentLocale, true)}
       </button>
@@ -67,13 +67,13 @@ export default function NavLanguageSwitcher() {
     return isMenuOpen ? (
       <ul
         ref={ref}
-        className="absolute right-0 w-28 cursor-pointer rounded-md border border-gray-50 bg-white shadow-sm shadow-gray-100 md:shadow-lg"
+        className="border-primary-light shadow-primary-regular absolute right-0 w-28 cursor-pointer rounded-md border bg-white shadow-sm md:shadow-lg"
       >
         {LOCALES.map((locale: string) => (
           <li
             key={locale}
             className={clsx(
-              'box-border bg-transparent bg-white text-sm hover:bg-gray-50',
+              'hover:bg-primary-light box-border bg-transparent bg-white text-sm',
               locale === currentLocale ? 'font-bold' : 'font-normal',
             )}
             onClick={() => handleChangeLanguage(locale)}

@@ -20,12 +20,12 @@ export default function ScoreBoard({
     return (
       <div
         className={clsx(
-          'flex flex-col items-center justify-center border border-gray-100 p-2',
+          'border-primary-regular flex flex-col items-center justify-center border p-2',
           !isGameOver && currentPlayer === player
             ? 'animate-bg-breathing font-bold'
             : isGameOver && winner === player
-              ? 'bg-sky-50 font-bold text-sky-500'
-              : 'bg-gray-50 font-normal',
+              ? 'text-secondary-text bg-secondary-light font-bold'
+              : 'bg-primary-light font-normal',
         )}
       >
         <div className="text-large py-2">

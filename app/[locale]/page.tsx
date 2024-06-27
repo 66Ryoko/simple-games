@@ -29,7 +29,7 @@ export default function Home() {
       />
       <div className="absolute inset-x-0 top-1/4 z-10 mx-auto flex items-center justify-center">
         <p
-          className={`${kanit.className} p-4 text-4xl text-gray-50 sm:text-5xl md:text-7xl md:text-gray-800 `}
+          className={`${kanit.className} md:text-primary-text text-primary-light p-4 text-4xl sm:text-5xl md:text-7xl `}
         >
           {t('hero-title')}
         </p>

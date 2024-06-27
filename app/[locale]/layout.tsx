@@ -37,7 +37,7 @@ export default async function RootLayout({
     <html lang={locale}>
       <NextIntlClientProvider messages={messages}>
         <StoreProvider>
-          <body className={`${inter.className} text-gray-800`}>
+          <body className={`${inter.className} text-primary-text`}>
             <NavBar />
             {children}
           </body>

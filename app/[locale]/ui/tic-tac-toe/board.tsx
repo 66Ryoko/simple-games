@@ -155,7 +155,9 @@ export default function Board() {
         key={`level-${level}`}
         className={clsx(
           'flex aspect-square flex-col p-2',
-          isSelected ? 'bg-sky-50 text-sky-500 hover:bg-sky-100' : '',
+          isSelected
+            ? 'text-secondary-text bg-secondary-light hover:bg-secondary-regular'
+            : '',
         )}
         onClick={() => changeBoardSize(size)}
       >
@@ -182,7 +184,7 @@ export default function Board() {
       <p
         className={clsx(
           `${kanit.className} text-lg`,
-          isGameOver ? 'text-sky-500' : 'text-gray-500',
+          isGameOver ? 'text-secondary-text' : 'text-primary-text',
         )}
       >
         {gameStatus()}
